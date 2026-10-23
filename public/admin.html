@@ -1,0 +1,1541 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>江湖录 · 管理后台</title>
+<style>
+:root {
+  --ink: #2b2118;
+  --paper: #f3e9d2;
+  --bg: #efe6d0;
+  --red: #9e2b25;
+  --red-deep: #7a1f1a;
+  --gold: #b8860b;
+  --line: #d9c79a;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: "Microsoft YaHei", "PingFang SC", "Noto Sans SC", sans-serif;
+  background: var(--bg); color: var(--ink); min-height: 100vh; font-size: 14px;
+}
+/* ---------- 登录页 ---------- */
+.login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(160deg, #35281c, #2b2118 60%); }
+.login-box { background: #fbf5e6; border: 2px solid var(--gold); border-radius: 10px; padding: 36px 40px; width: 360px; box-shadow: 0 12px 40px rgba(0,0,0,.45); }
+.login-box h1 { font-size: 24px; color: var(--red-deep); text-align: center; letter-spacing: 6px; margin-bottom: 6px; font-family: "KaiTi", "楷体", serif; }
+.login-box .sub { text-align: center; color: #96835f; font-size: 12px; margin-bottom: 24px; letter-spacing: 2px; }
+.login-box input { display: block; width: 100%; margin-bottom: 12px; padding: 10px 12px; font-size: 14px; border: 1px solid var(--line); border-radius: 6px; }
+.login-box button { width: 100%; padding: 11px; font-size: 15px; background: var(--red); color: #fdf3dd; border: none; border-radius: 6px; cursor: pointer; letter-spacing: 4px; }
+.login-box button:hover { background: var(--red-deep); }
+.login-err { color: var(--red); font-size: 13px; text-align: center; min-height: 18px; margin-bottom: 8px; }
+/* ---------- 后台框架 ---------- */
+.layout { display: none; min-height: 100vh; }
+.layout.show { display: flex; }
+.sidebar {
+  width: 210px; flex-shrink: 0; background: #2b2118; color: rgba(243,233,210,.8);
+  display: flex; flex-direction: column; padding: 18px 0;
+}
+.sidebar .logo { font-family: "KaiTi","楷体",serif; color: var(--gold); font-size: 22px; letter-spacing: 4px; text-align: center; padding: 8px 0 18px; border-bottom: 1px solid rgba(184,134,11,.3); margin-bottom: 14px; }
+.sidebar button {
+  display: block; width: 100%; background: none; border: none; color: rgba(243,233,210,.75);
+  text-align: left; padding: 13px 26px; font-size: 15px; cursor: pointer; border-left: 3px solid transparent;
+}
+.sidebar button:hover { color: #f3e9d2; background: rgba(243,233,210,.06); }
+.sidebar button.active { color: var(--gold-light, #d4a938); border-left-color: #d4a938; background: rgba(212,169,56,.1); }
+.sidebar .spacer { flex: 1; }
+.content { flex: 1; padding: 26px 34px 60px; overflow-x: auto; max-width: 100%; }
+h2.page-title { font-size: 21px; color: var(--red-deep); letter-spacing: 3px; margin-bottom: 20px; font-family: "KaiTi","楷体",serif; border-left: 5px solid var(--red); padding-left: 12px; }
+/* ---------- 组件 ---------- */
+.card { background: #fbf5e6; border: 1px solid var(--line); border-radius: 8px; padding: 18px 22px; margin-bottom: 18px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 14px; margin-bottom: 22px; }
+.stat { background: #fbf5e6; border: 1px solid var(--line); border-radius: 8px; padding: 16px; text-align: center; }
+.stat .num { font-size: 26px; color: var(--red); font-weight: 700; }
+.stat .lbl { font-size: 13px; color: #8a7a5c; margin-top: 4px; }
+table { width: 100%; border-collapse: collapse; background: #fffdf6; border-radius: 6px; overflow: hidden; }
+th, td { padding: 9px 12px; border-bottom: 1px solid #eee3c8; text-align: left; font-size: 13.5px; vertical-align: top; }
+th { background: #f0e5ca; color: var(--ink); font-size: 13px; white-space: nowrap; }
+tr:hover td { background: #faf3de; }
+.tag { display: inline-block; font-size: 12px; padding: 2px 10px; border-radius: 10px; }
+.tag.replace { background: #e3efe3; color: #2e6b2e; }
+.tag.noreplace { background: #f7e3e1; color: var(--red); }
+.tag.off { background: #eee; color: #999; }
+.tag.cat { background: #efe8d2; color: #7a6a4a; }
+.tag.again { background: #f6e7c1; color: #96700a; font-weight: 700; }
+.btn { background: var(--red); color: #fff; border: none; border-radius: 5px; padding: 6px 14px; font-size: 13px; cursor: pointer; margin-right: 6px; margin-bottom: 4px; }
+.btn:hover { background: var(--red-deep); }
+.btn.gold { background: var(--gold); }
+.btn.gold:hover { background: #96700a; }
+.btn.plain { background: #8a7a5c; }
+.btn.plain:hover { background: #6f6047; }
+.btn.danger { background: #b03a35; }
+.btn.small { padding: 3px 10px; font-size: 12px; }
+.toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+input[type=text], input[type=number], input[type=password], select, textarea {
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: 5px; font-size: 13.5px; font-family: inherit; background: #fffdf6;
+}
+textarea { width: 100%; min-height: 120px; line-height: 1.8; resize: vertical; }
+label.f { display: inline-flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: #8a7a5c; margin-right: 12px; }
+.form-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 12px; }
+.hint { font-size: 12.5px; color: #96835f; line-height: 1.7; }
+.sub-h { font-size: 14px; color: #8a7a5c; letter-spacing: 3px; margin: 18px 0 10px; }
+.tag.silver { background: #f6e7c1; color: #96700a; font-weight: 700; }
+.pager { display: flex; gap: 8px; align-items: center; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+.pager button { padding: 5px 12px; border: 1px solid var(--line); background: #fffdf6; border-radius: 5px; cursor: pointer; }
+.pager button:disabled { opacity: .4; cursor: default; }
+/* ---------- 弹窗 ---------- */
+.mask { position: fixed; inset: 0; background: rgba(20,14,8,.5); display: none; align-items: center; justify-content: center; z-index: 100; padding: 20px; }
+.mask.show { display: flex; }
+.dialog { background: #fbf5e6; border: 2px solid var(--gold); border-radius: 8px; width: 560px; max-width: 95vw; max-height: 88vh; display: flex; flex-direction: column; }
+.dialog .dhead { padding: 14px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; }
+.dialog .dhead b { font-size: 16px; color: var(--red-deep); letter-spacing: 2px; }
+.dialog .dbody { padding: 18px 22px; overflow-y: auto; }
+.dialog .dfoot { padding: 12px 20px; border-top: 1px solid var(--line); text-align: right; }
+.dclose { background: none; border: none; font-size: 22px; cursor: pointer; color: #96835f; line-height: 1; }
+.field { margin-bottom: 12px; }
+.field .flabel { font-size: 13px; color: #8a7a5c; margin-bottom: 5px; }
+.field input, .field select, .field textarea { width: 100%; }
+.d-err { color: var(--red); font-size: 13px; min-height: 18px; margin-bottom: 6px; }
+.module-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.module-tabs button { padding: 8px 18px; border: 1px solid var(--line); background: #fffdf6; border-radius: 20px; cursor: pointer; font-size: 14px; }
+.module-tabs button.active { background: var(--red); color: #fff; border-color: var(--red); }
+</style>
+</head>
+<body>
+
+<!-- ============ 登录 / 初始化 ============ -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-box">
+    <h1>江湖录 · 总舵</h1>
+    <div class="sub" id="loginSub">管理后台 · 凭令而入</div>
+    <input id="loginUser" placeholder="管理员账号" autocomplete="off">
+    <input id="loginPass" type="password" placeholder="口令" autocomplete="off">
+    <input id="setupKey" type="password" placeholder="Cloudflare 初始化密钥（仅首次）" autocomplete="off" style="display:none">
+    <div class="login-err" id="loginErr"></div>
+    <button id="loginBtn" onclick="doAdminLogin()">入 内</button>
+  </div>
+</div>
+
+<!-- ============ 后台主体 ============ -->
+<div class="layout" id="layout">
+  <div class="sidebar">
+    <div class="logo">总舵后台</div>
+    <button data-page="overview" class="active">总览</button>
+    <button data-page="prizes">奖池管理</button>
+    <button data-page="users">用户管理</button>
+    <button data-page="draws">抽奖记录</button>
+    <button data-page="content">内容管理</button>
+    <button data-page="story">剧情管理</button>
+    <button data-page="manuals">秘籍管理</button>
+    <button data-page="sects">门派管理</button>
+    <button data-page="wenyuan">文苑治理</button>
+    <button data-page="shop">市集管理</button>
+    <button data-page="requests">呈文审批</button>
+    <button data-page="admins">管理员账号</button>
+    <div class="spacer"></div>
+    <button onclick="location.href='./'">← 回用户端</button>
+    <button onclick="adminLogout()">退出后台</button>
+  </div>
+  <div class="content">
+
+    <!-- 总览 -->
+    <div class="page" id="page-overview">
+      <h2 class="page-title">总览</h2>
+      <div class="stats" id="stats"></div>
+      <div class="card">
+        <b>快速上手</b>
+        <div class="hint" style="margin-top:8px">
+          1. 「奖池管理」中添加奖励（或一键生成100份占位后逐一编辑），标记每份奖励是「放回」还是「不放回」；<br>
+          2. 「用户管理」中为用户分配抽签次数，也可在此直接代任何用户抽签；<br>
+          3. 「内容管理」中为五个模块发布 / 更新内容，所有用户即可在用户端查看；<br>
+          4. 「抽奖记录」即全体用户的背包数据，可修改、补录、删除。
+        </div>
+      </div>
+    </div>
+
+    <!-- 奖池管理 -->
+    <div class="page" id="page-prizes" style="display:none">
+      <h2 class="page-title">奖池管理</h2>
+      <div class="card" id="drawToggleCard">
+        <b style="font-size:15px">天命签筒总开关</b>
+        <div class="form-row" style="margin-top:8px">
+          <label class="f" style="flex-direction:row;align-items:center;gap:8px">
+            <input type="checkbox" id="pzDrawEnabled" style="margin:0"> <span style="font-size:14px;color:var(--ink)">开启抽奖（取消勾选并保存 = 全站关闭抽签，含代抽）</span>
+          </label>
+          <button class="btn" onclick="saveDrawToggle()">保存开关</button>
+          <span class="hint" id="pzDrawState"></span>
+        </div>
+      </div>
+      <div class="card">
+        <b>自拟物品（不进奖池）</b>
+        <div class="form-row" style="margin-top:10px">
+          <label class="f">名称<input type="text" id="qiName" placeholder="物品名称" style="width:150px"></label>
+          <label class="f">归类<select id="qiCat"></select></label>
+          <label class="f">定价(铜板·文)<input type="number" id="qiPrice" value="10000" min="0" style="width:110px"></label>
+          <label class="f">简介<input type="text" id="qiDesc" placeholder="物品简介（可空）" style="width:200px"></label>
+        </div>
+        <div class="form-row">
+          <label class="f">去向：
+            <select id="qiTarget">
+              <option value="none">仅创建（暂不发放）</option>
+              <option value="shop">上架官府集市</option>
+              <option value="user">直接放入某用户背包</option>
+            </select>
+          </label>
+          <label class="f" id="qiUserWrap" style="display:none">目标用户<select id="qiUser"></select></label>
+          <label class="f" id="qiShopWrap" style="display:none">集市售价<input type="number" id="qiShopPrice" value="10000" min="0" style="width:110px"></label>
+          <label class="f" id="qiCurWrap" style="display:none">支付货币<select id="qiCurrency">
+            <option value="copper">铜板（文）</option>
+            <option value="silver">纹银（两）</option>
+            <option value="contribution">贡献值</option>
+          </select></label>
+          <button class="btn gold" onclick="quickItem()">创建物品</button>
+        </div>
+        <div class="hint">自拟物品默认不进入抽奖奖池；可选直接上架官府集市或颁赐给指定用户入其背包。</div>
+      </div>
+      <div class="card">
+        <div class="form-row">
+          <label class="f">名称<input type="text" id="pName" placeholder="奖励名称" style="width:180px"></label>
+          <label class="f">归类<select id="pCat"></select></label>
+          <label class="f">放回式<input type="checkbox" id="pReplace" checked style="margin-bottom:9px"></label>
+          <label class="f">再来一次<input type="checkbox" id="pAgain" style="margin-bottom:9px" title="抽中者额外获得一次抽签机会"></label>
+          <label class="f">金光特效<input type="checkbox" id="pGlow" style="margin-bottom:9px" title="抽出时触发金光特效"></label>
+          <label class="f">库存(不放回)<input type="number" id="pStock" value="1" min="0" style="width:90px"></label>
+          <label class="f">权重<input type="number" id="pWeight" value="1" step="0.1" min="0.01" style="width:80px"></label>
+          <label class="f">定价(铜板·文)<input type="number" id="pPrice" value="10000" min="0" style="width:110px"></label>
+          <label class="f">描述<input type="text" id="pDesc" placeholder="奖励说明（可空）" style="width:220px"></label>
+          <button class="btn" onclick="addPrize()">添加奖励</button>
+        </div>
+        <div class="hint">放回式奖励取之不尽；不放回式奖励每被抽中一次库存减一，库存归零后不再出现在奖池。「再来一次」抽中即额外获得一次抽签机会（不消耗库存）。点击表格中的「编辑」可随时调整。</div>
+      </div>
+      <div class="toolbar">
+        <button class="btn gold" onclick="seed100()">一键生成100份占位奖励</button>
+        <button class="btn small" onclick="batchPrizes('enable')">批量启用</button>
+        <button class="btn small plain" onclick="batchPrizes('disable')">批量停用</button>
+        <button class="btn small danger" onclick="batchPrizes('delete')">批量删除</button>
+        <input type="text" id="prizeSearch" placeholder="搜索奖励…" oninput="renderPrizes()">
+        <span class="hint" id="prizeSummary"></span>
+      </div>
+      <table>
+        <thead><tr><th><input type="checkbox" id="prizeSelAll" onchange="toggleAllPrizes(this)"></th><th>ID</th><th>名称</th><th>归类</th><th>类型</th><th>库存</th><th>权重</th><th>定价</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody id="prizeBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 用户管理 -->
+    <div class="page" id="page-users" style="display:none">
+      <h2 class="page-title">用户管理</h2>
+      <div class="card">
+        <b>新建用户</b>
+        <div class="form-row" style="margin-top:10px">
+          <label class="f">用户名<input type="text" id="nuName" style="width:160px"></label>
+          <label class="f">口令<input type="text" id="nuPass" style="width:140px"></label>
+          <label class="f">初始抽签次数<input type="number" id="nuQuota" value="0" min="0" style="width:110px"></label>
+          <button class="btn" onclick="addUser()">创建</button>
+        </div>
+      </div>
+      <div class="toolbar">
+        <input type="text" id="userSearch" placeholder="搜索用户…" oninput="renderUsers()">
+        <span class="hint" id="userSummary"></span>
+      </div>
+      <table>
+        <thead><tr><th>ID</th><th>用户名</th><th>状态</th><th>剩余次数</th><th>铜板(文)</th><th>纹银(两)</th><th>已获奖励</th><th>注册时间</th><th>操作</th></tr></thead>
+        <tbody id="userBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 抽奖记录 -->
+    <div class="page" id="page-draws" style="display:none">
+      <h2 class="page-title">抽奖记录（全体背包数据）</h2>
+      <div class="toolbar">
+        <button class="btn gold" onclick="openAddDraw()">补录一条记录</button>
+        <input type="text" id="drawSearch" placeholder="搜索用户 / 奖品…" oninput="renderDraws()">
+        <span class="hint" id="drawSummary"></span>
+      </div>
+      <table>
+        <thead><tr><th>ID</th><th>用户</th><th>奖品</th><th>归类</th><th>时间</th><th>来源</th><th>备注</th><th>操作</th></tr></thead>
+        <tbody id="drawBody"></tbody>
+      </table>
+      <div class="pager" id="drawPager"></div>
+    </div>
+
+    <!-- 内容管理 -->
+    <div class="page" id="page-content" style="display:none">
+      <h2 class="page-title">内容管理</h2>
+      <div class="module-tabs" id="contentTabs"></div>
+      <div class="toolbar">
+        <button class="btn" onclick="openPostEditor()">发布新内容</button>
+        <span class="hint">五模块独立管理；内容不限字数。用户端只能查看，不能修改。</span>
+      </div>
+      <table>
+        <thead><tr><th>ID</th><th>标题</th><th>字数</th><th>发布时间</th><th>更新时间</th><th>置顶</th><th>操作</th></tr></thead>
+        <tbody id="postBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 市集管理 -->
+    <div class="page" id="page-shop" style="display:none">
+      <h2 class="page-title">市集管理</h2>
+      <div class="card">
+        <b>系统参数</b>
+        <div class="form-row" style="margin-top:10px">
+          <label class="f">俸禄下限(文)<input type="number" id="setStipendMin" min="0" style="width:100px"></label>
+          <label class="f">俸禄上限(文)<input type="number" id="setStipendMax" min="0" style="width:100px"></label>
+          <label class="f">回收折扣(0-1)<input type="number" id="setRate" step="0.05" min="0.05" max="1" style="width:110px"></label>
+          <label class="f">天命签筒<input type="checkbox" id="setDrawEnabled" style="margin-bottom:9px" title="关闭后所有用户无法抽签"></label>
+          <button class="btn" onclick="saveSettings()">保存参数</button>
+        </div>
+        <div class="hint">俸禄：用户每日登录可领，在上下限之间随机（如 70~150 文）；回收折扣：用户把奖品售予系统时的折价比例（如 0.7 即七折）；天命签筒开关：取消勾选即关闭全站抽奖（含管理员代抽），重新勾选恢复。</div>
+      </div>
+      <div class="card">
+        <b>官府集市 · 上架商品</b>
+        <div class="form-row" style="margin-top:10px">
+          <label class="f">奖品<select id="shopPrize"></select></label>
+          <label class="f">售价<input type="number" id="shopPrice" value="10000" min="0" style="width:100px"></label>
+          <label class="f">支付货币<select id="shopCurrency">
+            <option value="copper">铜板（文）</option>
+            <option value="silver">纹银（两）</option>
+            <option value="contribution">贡献值</option>
+          </select></label>
+          <label class="f">库存(-1无限)<input type="number" id="shopStock" value="-1" style="width:100px"></label>
+          <button class="btn" onclick="addShopItem()">上架</button>
+        </div>
+        <div class="hint">上架后所有用户可在互市坊用铜板购买，购得物品自动入其背包。</div>
+      </div>
+      <div class="toolbar">
+        <button class="btn small" onclick="batchShop('on')">批量上架</button>
+        <button class="btn small plain" onclick="batchShop('off')">批量下架</button>
+        <button class="btn small danger" onclick="batchShop('delete')">批量删除</button>
+        <span class="hint">官府集市批量操作：先勾选下方商品</span>
+      </div>
+      <table>
+        <thead><tr><th><input type="checkbox" id="shopSelAll" onchange="document.querySelectorAll('.shopChk').forEach(c=>c.checked=this.checked)"></th><th>ID</th><th>商品（对应奖品）</th><th>归类</th><th>售价</th><th>库存</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody id="shopBody"></tbody>
+      </table>
+      <h2 class="page-title" style="margin-top:26px">互市挂单治理</h2>
+      <div class="hint" style="margin-bottom:10px">对用户挂出的在售物品：可修改金额，或下架（物品自动退回卖家背包）。</div>
+      <table>
+        <thead><tr><th>ID</th><th>物品</th><th>卖家</th><th>售价(文)</th><th>挂单时间</th><th>操作</th></tr></thead>
+        <tbody id="activeTradesBody"></tbody>
+      </table>
+      <h2 class="page-title" style="margin-top:26px">交易流水</h2>
+      <div class="sub-h">互市成交/挂单</div>
+      <table>
+        <thead><tr><th>ID</th><th>物品</th><th>卖家</th><th>买家</th><th>售价</th><th>状态</th><th>时间</th></tr></thead>
+        <tbody id="tradeBody"></tbody>
+      </table>
+      <div class="sub-h">赠礼流水</div>
+      <table>
+        <thead><tr><th>ID</th><th>物品</th><th>赠出者ID</th><th>接收者ID</th><th>状态</th><th>时间</th></tr></thead>
+        <tbody id="giftBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 剧情管理 -->
+    <div class="page" id="page-story" style="display:none">
+      <h2 class="page-title">剧情管理</h2>
+      <div class="module-tabs" id="storyTabs">
+        <button class="active" data-mod="qunying" onclick="storyMod='qunying';renderStoryTabs();loadStory()">豪侠群英传（主线）</button>
+        <button data-mod="jiuzhou" onclick="storyMod='jiuzhou';renderStoryTabs();loadStory()">九州风云录（支线）</button>
+      </div>
+      <div class="card">
+        <b>新建章</b>
+        <div class="form-row" style="margin-top:10px">
+          <label class="f">章名<input type="text" id="stChTitle" placeholder="例如：风起洛阳" style="width:200px"></label>
+          <label class="f">序号(可空)<input type="number" id="stChOrder" placeholder="自动" min="1" style="width:90px"></label>
+          <button class="btn" onclick="addChapter()">建章</button>
+        </div>
+      </div>
+      <div id="storyAdminBody"></div>
+    </div>
+
+    <!-- 秘籍管理 -->
+    <div class="page" id="page-manuals" style="display:none">
+      <h2 class="page-title">秘籍管理 <small style="font-weight:400;font-size:13px;letter-spacing:1px">残卷构成 · 与奖池关联 · 合成后自动绝版</small></h2>
+      <div class="card">
+        <b>新立秘籍</b>
+        <div class="form-row" style="margin-top:10px">
+          <label class="f">秘籍名称<input type="text" id="mnName" placeholder="例如：降龙十八掌" style="width:180px"></label>
+          <button class="btn" onclick="addManual()">立籍</button>
+        </div>
+        <div class="hint">操作三步走：<br>
+          ① 在此输入秘籍名称（如「降龙十八掌」），点「立籍」——会自动弹出残卷选择框；<br>
+          ② 在弹窗中<b>勾选奖池里的若干奖品作为残卷</b>（如「降龙十八掌·其一/其二/其三/其四」——这些奖品需先在「奖池管理」中创建好），保存；<br>
+          ③ 用户在武林秘籍模块集齐这些残卷后即可合成，合成后残卷自动绝版。<br>
+          若奖池里还没有想好名称的残卷奖品，可先立籍，稍后点秘籍列表中的「编辑残卷构成」再挂入。</div>
+      </div>
+      <div id="manualList"></div>
+      <div class="sub-h">—— 合成记录 ——</div>
+      <table>
+        <thead><tr><th>ID</th><th>秘籍</th><th>合成侠士</th><th>消耗残卷</th><th>时间</th></tr></thead>
+        <tbody id="synthBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 门派管理 -->
+    <div class="page" id="page-sects" style="display:none">
+      <h2 class="page-title">门派管理 <small style="font-weight:400;font-size:13px;letter-spacing:1px">立派 · 任命掌门 · 弟子名录</small></h2>
+      <div class="card">
+        <b>新立门派</b>
+        <div class="form-row" style="margin-top:10px">
+          <label class="f">门派名称<input type="text" id="scName" placeholder="例如：青云剑宗" style="width:180px"></label>
+          <button class="btn" onclick="addSect()">立派</button>
+          <span class="hint">掌门从下方各派的「任命掌门」处设置；掌门自动归属该派。</span>
+        </div>
+      </div>
+      <table>
+        <thead><tr><th>ID</th><th>门派</th><th>首领称号</th><th>首领</th><th>副首领</th><th>弟子数</th><th>累计贡献</th><th>操作</th></tr></thead>
+        <tbody id="sectBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 文苑治理 -->
+    <div class="page" id="page-wenyuan" style="display:none">
+      <h2 class="page-title">文苑治理 <small style="font-weight:400;font-size:13px;letter-spacing:1px">毛遂自荐与告示栏：擦亮 · 置顶 · 修改 · 删除</small></h2>
+      <div class="sub-h">—— 毛遂自荐作品 ——</div>
+      <table>
+        <thead><tr><th>ID</th><th>标题</th><th>作者</th><th>字数</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody id="wWorks"></tbody>
+      </table>
+      <div class="sub-h">—— 告示栏 ——</div>
+      <table>
+        <thead><tr><th>ID</th><th>标题</th><th>张贴人</th><th>悬赏</th><th>摘取</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody id="wNotices"></tbody>
+      </table>
+    </div>
+
+    <!-- 呈文审批 -->
+    <div class="page" id="page-requests" style="display:none">
+      <h2 class="page-title">呈文审批</h2>
+      <div class="hint" style="margin-bottom:14px">用户可提交申请：请求抽签次数，并可附背包物品为凭。批准时按次数为其加签，附带的物品即被消耗；驳回则物品原样退回。</div>
+      <table>
+        <thead><tr><th>ID</th><th>用户</th><th>申请事项</th><th>求次数</th><th>附带物品</th><th>状态</th><th>操作</th></tr></thead>
+        <tbody id="reqBody"></tbody>
+      </table>
+    </div>
+
+    <!-- 管理员账号 -->
+    <div class="page" id="page-admins" style="display:none">
+      <h2 class="page-title">管理员账号</h2>
+      <div class="card">
+        <b>新增管理员</b>
+        <div class="form-row" style="margin-top:10px">
+          <label class="f">账号<input type="text" id="naName" style="width:160px"></label>
+          <label class="f">口令<input type="text" id="naPass" style="width:140px"></label>
+          <button class="btn" onclick="addAdmin()">创建</button>
+        </div>
+        <div class="hint">每位管理员凭自己的账号登录后台，权限相同（均可管理奖池、内容、用户与记录）。</div>
+      </div>
+      <table>
+        <thead><tr><th>ID</th><th>账号</th><th>创建时间</th><th>操作</th></tr></thead>
+        <tbody id="adminBody"></tbody>
+      </table>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============ 通用弹窗 ============ -->
+<div class="mask" id="dlgMask">
+  <div class="dialog">
+    <div class="dhead"><b id="dlgTitle">编辑</b><button class="dclose" onclick="closeDlg()">×</button></div>
+    <div class="dbody" id="dlgBody"></div>
+    <div class="dfoot">
+      <span class="d-err" id="dlgErr" style="float:left"></span>
+      <button class="btn plain" onclick="closeDlg()">取消</button>
+      <button class="btn" id="dlgOk" onclick="dlgOkClick()">保存</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+let adminToken = localStorage.getItem('jianghulu_admin_token') || '';
+let MODULES = [];
+let prizes = [], users = [], draws = [], posts = [];
+let currentContentModule = 'mibao';
+let drawPage = 0;
+let dlgHandler = null; // 弹窗保存回调
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtTime = iso => { const d = new Date(iso); const p = n => String(n).padStart(2,'0'); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`; };
+
+async function api(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json', 'X-Admin-Token': adminToken };
+  const res = await fetch(path, { method: opts.method || 'GET', headers, body: opts.body ? JSON.stringify(opts.body) : undefined });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || '请求失败');
+  return data;
+}
+
+/* ============ 登录 ============ */
+async function boot() {
+  // 支持 #token=xxx 直登（前端「总舵入口」与代登录使用）
+  try {
+    const hashT = new URLSearchParams(location.hash.slice(1)).get('token');
+    if (hashT) {
+      adminToken = hashT;
+      localStorage.setItem('jianghulu_admin_token', adminToken);
+      history.replaceState(null, '', location.pathname);
+    }
+  } catch (e) { /* ignore */ }
+  const site = await (await fetch('/api/site')).json();
+  MODULES = site.modules;
+  if (!site.hasAdmin) {
+    $('loginSub').textContent = '首次使用 · 请先创建第一位管理员';
+    $('loginBtn').textContent = '初始化管理员';
+    $('setupKey').style.display = 'block';
+  }
+  if (adminToken) {
+    try { await loadOverview(); enterPanel(); return; } catch (e) { adminToken = ''; localStorage.removeItem('jianghulu_admin_token'); }
+  }
+  $('loginWrap').style.display = 'flex';
+}
+async function doAdminLogin() {
+  const username = $('loginUser').value.trim(), password = $('loginPass').value;
+  $('loginErr').textContent = '';
+  if (!username || !password) { $('loginErr').textContent = '账号与口令不能为空'; return; }
+  const site = await (await fetch('/api/site')).json();
+  try {
+    const d = await api(site.hasAdmin ? '/api/admin/login' : '/api/admin/init', { method: 'POST', body: { username, password, setupKey: $('setupKey').value } });
+    adminToken = d.token;
+    localStorage.setItem('jianghulu_admin_token', adminToken);
+    $('loginWrap').style.display = 'none';
+    enterPanel();
+  } catch (e) { $('loginErr').textContent = e.message; }
+}
+$('loginPass').addEventListener('keydown', e => { if (e.key === 'Enter') doAdminLogin(); });
+function adminLogout() { adminToken = ''; localStorage.removeItem('jianghulu_admin_token'); location.reload(); }
+
+/* ============ 框架导航 ============ */
+function enterPanel() {
+  $('loginWrap').style.display = 'none';
+  $('layout').classList.add('show');
+  document.querySelectorAll('.sidebar button[data-page]').forEach(b => {
+    b.onclick = () => showPage(b.dataset.page);
+  });
+  loadOverview();
+}
+function showPage(page) {
+  document.querySelectorAll('.sidebar button[data-page]').forEach(b => b.classList.toggle('active', b.dataset.page === page));
+  document.querySelectorAll('.page').forEach(p => p.style.display = 'none');
+  $('page-' + page).style.display = 'block';
+  if (page === 'overview') loadOverview();
+  if (page === 'prizes') loadPrizes();
+  if (page === 'users') loadUsers();
+  if (page === 'draws') loadDraws();
+  if (page === 'content') loadPosts();
+  if (page === 'story') loadStory();
+  if (page === 'manuals') loadManuals();
+  if (page === 'sects') loadSectsAdmin();
+  if (page === 'wenyuan') loadWenyuan();
+  if (page === 'shop') loadShop();
+  if (page === 'requests') loadRequests();
+  if (page === 'admins') loadAdmins();
+}
+
+/* ============ 总览 ============ */
+async function loadOverview() {
+  const d = await api('/api/admin/overview');
+  const s = d.stats;
+  $('stats').innerHTML = [
+    ['注册用户', s.users], ['管理员', s.admins],
+    ['奖池奖励', s.prizes + '（启用 ' + s.prizesEnabled + '）'],
+    ['累计发放', s.draws], ['未用次数', s.quotaTotal], ['内容条目', s.posts],
+  ].map(([l, n]) => `<div class="stat"><div class="num">${esc(String(n))}</div><div class="lbl">${esc(l)}</div></div>`).join('');
+}
+
+/* ============ 奖池 ============ */
+async function loadPrizes() {
+  const d = await api('/api/admin/prizes');
+  prizes = d.prizes;
+  if (!$('pCat').options.length) {
+    $('pCat').innerHTML = MODULES.map(m => `<option value="${m.name}">${m.name}</option>`).join('');
+    $('qiCat').innerHTML = MODULES.map(m => `<option value="${m.name}">${m.name}</option>`).join('') + `<option value="其他">其他</option>`;
+  }
+  // 抽奖开关状态
+  try {
+    const s = await api('/api/admin/settings');
+    $('pzDrawEnabled').checked = s.settings.drawEnabled !== false;
+    $('pzDrawState').textContent = s.settings.drawEnabled !== false ? '当前：开启中' : '当前：已关闭';
+  } catch (e) {}
+  // 自拟物品：目标用户下拉
+  try {
+    const ud = await api('/api/admin/users');
+    $('qiUser').innerHTML = ud.users.filter(u => u.status === 'approved').map(u => `<option value="${u.id}">${esc(u.username)}</option>`).join('');
+  } catch (e) {}
+  $('qiTarget').onchange = () => {
+    const v = $('qiTarget').value;
+    $('qiUserWrap').style.display = v === 'user' ? 'flex' : 'none';
+    const shopOn = v === 'shop';
+    $('qiShopWrap').style.display = shopOn ? 'flex' : 'none';
+    $('qiCurWrap').style.display = shopOn ? 'flex' : 'none';
+  };
+  renderPrizes();
+}
+async function saveDrawToggle() {
+  try {
+    await api('/api/admin/settings', { method: 'PATCH', body: { drawEnabled: $('pzDrawEnabled').checked } });
+    $('pzDrawState').textContent = $('pzDrawEnabled').checked ? '当前：开启中' : '当前：已关闭';
+    alert($('pzDrawEnabled').checked ? '天命签筒已开启' : '天命签筒已关闭（全站抽签停用）');
+  } catch (e) { alert(e.message); }
+}
+async function quickItem() {
+  const name = $('qiName').value;
+  if (!name.trim()) { alert('物品名称不能为空'); return; }
+  const target = $('qiTarget').value;
+  const body = {
+    name, desc: $('qiDesc').value, price: Number($('qiPrice').value) || 0, category: $('qiCat').value,
+    toShop: target === 'shop',
+    shopPrice: Number($('qiShopPrice').value) || 0,
+    currency: $('qiCurrency').value,
+    toUserId: target === 'user' ? Number($('qiUser').value) : null,
+  };
+  try {
+    const r = await api('/api/admin/quickitem', { method: 'POST', body });
+    let msg = `已创建「${r.data.prize.name}」`;
+    if (r.data.shopItem) msg += '并上架官府集市';
+    if (r.data.toUsername) msg += `，已放入 ${r.data.toUsername} 的背包`;
+    alert(msg);
+    $('qiName').value = ''; $('qiDesc').value = '';
+    loadPrizes();
+  } catch (e) { alert(e.message); }
+}
+function toggleAllPrizes(cb) {
+  document.querySelectorAll('.prizeChk').forEach(c => c.checked = cb.checked);
+}
+async function batchPrizes(action) {
+  const ids = [...document.querySelectorAll('.prizeChk:checked')].map(c => Number(c.value));
+  if (!ids.length) { alert('请先勾选要操作的奖励'); return; }
+  const label = action === 'enable' ? '启用' : action === 'disable' ? '停用' : '删除';
+  if (!confirm(`确认批量${label} ${ids.length} 份奖励？`)) return;
+  let done = 0, fail = 0;
+  for (const id of ids) {
+    try {
+      if (action === 'enable') await api(`/api/admin/prizes/${id}`, { method: 'PATCH', body: { enabled: true } });
+      else if (action === 'disable') await api(`/api/admin/prizes/${id}`, { method: 'PATCH', body: { enabled: false } });
+      else await api(`/api/admin/prizes/${id}`, { method: 'DELETE' });
+      done++;
+    } catch (e) { fail++; }
+  }
+  alert(`批量${label}完成：成功 ${done}，失败 ${fail}`);
+  $('prizeSelAll').checked = false;
+  loadPrizes();
+}
+function renderPrizes() {
+  const kw = $('prizeSearch').value.trim();
+  const list = prizes.filter(p => !kw || p.name.includes(kw) || p.desc.includes(kw));
+  $('prizeSummary').textContent = `共 ${list.length} 份奖励（放回 ${prizes.filter(p=>p.replace).length} / 不放回 ${prizes.filter(p=>!p.replace).length}）`;
+  $('prizeBody').innerHTML = list.map(p => `
+    <tr>
+      <td><input type="checkbox" class="prizeChk" value="${p.id}"></td>
+      <td>${p.id}</td>
+      <td><b>${esc(p.name)}</b>${p.desc ? `<div class="hint">${esc(p.desc)}</div>` : ''}</td>
+      <td><span class="tag cat">${esc(p.category)}</span></td>
+      <td>${p.again ? '<span class="tag again">再来一次</span>' : (p.replace ? '<span class="tag replace">放回</span>' : '<span class="tag noreplace">不放回</span>')}${p.glow ? ' <span class="tag silver">✦金光</span>' : ''}</td>
+      <td>${p.replace ? '∞' : p.stock + ' / ' + p.initialStock}</td>
+      <td>${p.weight}</td>
+      <td><span class="tag silver">${p.price != null ? p.price : 10000} 文</span></td>
+      <td>${p.enabled ? '<span class="tag replace">启用</span>' : '<span class="tag off">停用</span>'}</td>
+      <td>
+        <button class="btn small" onclick="editPrize(${p.id})">编辑</button>
+        <button class="btn small plain" onclick="togglePrize(${p.id})">${p.enabled ? '停用' : '启用'}</button>
+        <button class="btn small danger" onclick="delPrize(${p.id})">删除</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="10" style="text-align:center;color:#96835f;padding:30px">奖池空空，先添加奖励或点击上方「一键生成100份占位奖励」</td></tr>';
+}
+async function addPrize() {
+  const body = {
+    name: $('pName').value, desc: $('pDesc').value, category: $('pCat').value,
+    again: $('pAgain').checked,
+    glow: $('pGlow').checked,
+    replace: $('pAgain').checked || $('pReplace').checked,
+    stock: Number($('pStock').value) || 0,
+    weight: Number($('pWeight').value) || 1,
+    price: Number($('pPrice').value) || 10000,
+  };
+  if (!body.name.trim()) { alert('奖励名称不能为空'); return; }
+  try {
+    await api('/api/admin/prizes', { method: 'POST', body });
+    $('pName').value = ''; $('pDesc').value = '';
+    loadPrizes();
+  } catch (e) { alert(e.message); }
+}
+async function seed100() {
+  if (!confirm('将一次性生成100份占位奖励（一半放回、一半不放回各占50），生成后请逐一编辑。确定？')) return;
+  try { await api('/api/admin/prizes/seed100', { method: 'POST', body: {} }); loadPrizes(); }
+  catch (e) { alert(e.message); }
+}
+async function togglePrize(id) {
+  const p = prizes.find(x => x.id === id);
+  if (!p) return;
+  try { await api(`/api/admin/prizes/${id}`, { method: 'PATCH', body: { enabled: !p.enabled } }); loadPrizes(); } catch (e) { alert(e.message); }
+}
+async function delPrize(id) {
+  if (!confirm('确定删除该奖励？已产生的抽奖记录会保留，但将显示为「未知奖品」。')) return;
+  try { await api(`/api/admin/prizes/${id}`, { method: 'DELETE' }); loadPrizes(); } catch (e) { alert(e.message); }
+}
+function editPrize(id) {
+  const p = prizes.find(x => x.id === id);
+  if (!p) return;
+  openDialog('编辑奖励 #' + p.id, `
+    <div class="field"><div class="flabel">名称</div><input id="eName" type="text" value="${esc(p.name)}"></div>
+    <div class="field"><div class="flabel">描述</div><textarea id="eDesc">${esc(p.desc)}</textarea></div>
+    <div class="field"><div class="flabel">归类</div><select id="eCat">${MODULES.map(m => `<option value="${m.name}" ${m.name===p.category?'selected':''}>${m.name}</option>`).join('')}</select></div>
+    <div class="form-row">
+      <label class="f">放回式抽奖<input type="checkbox" id="eReplace" ${p.replace?'checked':''} onchange="$('eStockWrap').style.display=this.checked?'none':'flex'"></label>
+      <label class="f">再来一次<input type="checkbox" id="eAgain" ${p.again?'checked':''} title="抽中者额外获得一次抽签机会"></label>
+      <label class="f">金光特效<input type="checkbox" id="eGlow" ${p.glow?'checked':''} title="抽出时触发金光特效"></label>
+      <label class="f">所属秘籍<select id="eManual"></select></label>
+      <label class="f" id="eStockWrap" style="${p.replace?'display:none':''}">库存<input type="number" id="eStock" value="${p.stock==='∞'?1:p.stock}" min="0"></label>
+      <label class="f">权重<input type="number" id="eWeight" value="${p.weight}" step="0.1" min="0.01"></label>
+      <label class="f">定价(铜板·文)<input type="number" id="ePrice" value="${p.price != null ? p.price : 10000}" min="0"></label>
+    </div>
+    <div class="hint">修改「放回/不放回」类型时：改为放回则库存变为无限；改为不放回则库存重置为当前填写的数值。勾选「再来一次」后该奖励不消耗库存，抽中者额外获得一次抽签机会。选择「所属秘籍」可将此奖品挂为该秘籍的残卷。</div>
+  `, async () => {
+    // 回填所属秘籍下拉
+    try {
+      const md = await api('/api/admin/manuals');
+      $('eManual').innerHTML = `<option value="">（无 · 非残卷）</option>` +
+        md.manuals.map(m => `<option value="${m.id}" ${m.prizes.includes(p.id) ? 'selected' : ''}>《${esc(m.name)}》</option>`).join('');
+    } catch (e) { $('eManual').innerHTML = `<option value="">（无 · 非残卷）</option>`; }
+    const body = {
+      name: $('eName').value, desc: $('eDesc').value, category: $('eCat').value,
+      again: $('eAgain').checked,
+      glow: $('eGlow').checked,
+      manualId: $('eManual').value ? Number($('eManual').value) : null,
+      replace: $('eAgain').checked || $('eReplace').checked,
+      weight: Number($('eWeight').value) || 1,
+      price: Number($('ePrice').value) || 0,
+    };
+    if (!body.replace) body.stock = Number($('eStock').value) || 0;
+    if (!body.name.trim()) { showDlgErr('名称不能为空'); return false; }
+    await api(`/api/admin/prizes/${id}`, { method: 'PATCH', body });
+    loadPrizes();
+    return true;
+  });
+}
+
+/* ============ 用户 ============ */
+async function loadUsers() {
+  const d = await api('/api/admin/users');
+  users = d.users;
+  renderUsers();
+}
+function renderUsers() {
+  const kw = $('userSearch').value.trim();
+  const list = users.filter(u => !kw || u.username.includes(kw));
+  $('userSummary').textContent = `共 ${users.length} 名用户`;
+  $('userBody').innerHTML = list.map(u => `
+    <tr>
+      <td>${u.id}</td>
+      <td><b>${esc(u.username)}</b></td>
+      <td>${u.status === 'pending' ? '<span class="tag again">待审核</span>' : '<span class="tag replace">正常</span>'}</td>
+      <td>${u.quota}</td>
+      <td><span class="tag silver">${u.copper != null ? u.copper : 0}</span></td>
+      <td><span class="tag silver">${u.silver != null ? u.silver : 0}</span></td>
+      <td>${u.drawCount}</td>
+      <td>${fmtTime(u.createdAt)}</td>
+      <td>
+        ${u.status === 'pending' ? `
+          <button class="btn small" onclick="approveUser(${u.id})">批准</button>
+          <button class="btn small danger" onclick="rejectUser(${u.id})">拒绝</button>` : `
+          <button class="btn small" onclick="changeQuota(${u.id}, 1)">+1次</button>
+          <button class="btn small plain" onclick="changeQuota(${u.id}, -1)">-1次</button>
+          <button class="btn small gold" onclick="setQuota(${u.id})">设次数</button>
+          <button class="btn small gold" onclick="editAssets(${u.id})">资产</button>
+          <button class="btn small" onclick="openUserBag(${u.id})">背包</button>
+          <button class="btn small gold" onclick="drawFor(${u.id})">代抽</button>
+          <button class="btn small plain" onclick="loginAs(${u.id})">代登录</button>
+          <button class="btn small plain" onclick="resetUserPass(${u.id})">改口令</button>`}
+        <button class="btn small danger" onclick="delUser(${u.id})">删除</button>
+      </td>
+    </tr>`).join('');
+}
+async function addUser() {
+  const body = { username: $('nuName').value, password: $('nuPass').value, quota: Number($('nuQuota').value) || 0 };
+  if (!body.username.trim() || !body.password) { alert('用户名与口令不能为空'); return; }
+  try { await api('/api/admin/users', { method: 'POST', body }); $('nuName').value = ''; $('nuPass').value = ''; loadUsers(); }
+  catch (e) { alert(e.message); }
+}
+async function changeQuota(id, delta) {
+  try { await api(`/api/admin/users/${id}`, { method: 'PATCH', body: { quotaDelta: delta } }); loadUsers(); }
+  catch (e) { alert(e.message); }
+}
+async function approveUser(id) {
+  try { await api(`/api/admin/users/${id}/approve`, { method: 'POST' }); loadUsers(); }
+  catch (e) { alert(e.message); }
+}
+async function rejectUser(id) {
+  if (!confirm('拒绝该注册并删除此名号？')) return;
+  try { await api(`/api/admin/users/${id}/reject`, { method: 'POST' }); loadUsers(); }
+  catch (e) { alert(e.message); }
+}
+function editAssets(id) {
+  const u = users.find(x => x.id === id);
+  openDialog('「' + esc(u.username) + '」的资产（1000文 = 1两）', `
+    <div class="field"><div class="flabel">铜板（文）</div><input type="number" id="acCopper" value="${u.copper != null ? u.copper : 0}" min="0"></div>
+    <div class="field"><div class="flabel">纹银（两）</div><input type="number" id="acSilver" value="${u.silver != null ? u.silver : 0}" min="0"></div>
+  `, async () => {
+    await api(`/api/admin/users/${id}`, { method: 'PATCH', body: {
+      copper: Number($('acCopper').value) || 0,
+      silver: Number($('acSilver').value) || 0,
+    }});
+    loadUsers(); return true;
+  });
+}
+
+/* 管理员编辑用户背包 */
+let bagUserId = null;
+async function openUserBag(id) {
+  const u = users.find(x => x.id === id);
+  bagUserId = id;
+  const d = await api(`/api/admin/users/${id}/backpack`);
+  const prizesD = await api('/api/admin/prizes');
+  prizes = prizesD.prizes;
+  const rows = d.items.map(it => `
+    <tr>
+      <td>${it.id}</td>
+      <td><b>${it.prize ? esc(it.prize.name) : '未知'}</b></td>
+      <td><span class="tag cat">${it.prize ? esc(it.prize.category) : ''}</span></td>
+      <td>${it.status === 'held' ? '在包' : it.status === 'locked' ? '呈文锁定' : it.status === 'consumed' ? '已消耗' : it.status === 'listed' ? '挂单中' : '赠出中'}</td>
+      <td>${esc(it.note || '')}</td>
+      <td>
+        ${it.status === 'held' ? `
+          <button class="btn small gold" onclick="adminChangeBagPrize(${it.id})">改奖品</button>
+          <button class="btn small gold" onclick="adminAddNote(${it.id})">改备注</button>
+          <button class="btn small danger" onclick="adminDelBagItem(${it.id})">删除</button>` : '<span class="hint">处理相关交易后可编辑</span>'}
+      </td>
+    </tr>`).join('');
+  openDialog('「' + esc(u.username) + '」的背包', `
+    <table style="margin-bottom:14px">
+      <thead><tr><th>ID</th><th>物品</th><th>归类</th><th>状态</th><th>备注</th><th>操作</th></tr></thead>
+      <tbody>${rows || '<tr><td colspan="6" style="text-align:center;color:#96835f;padding:20px">背包空空</td></tr>'}</tbody>
+    </table>
+    <div class="field"><div class="flabel">补录一件物品入其背包</div>
+      <select id="bagAddPrize">${prizes.map(p => `<option value="${p.id}">#${p.id} ${esc(p.name)}</option>`).join('')}</select>
+      <button class="btn small" onclick="adminAddBagItem()">补录</button>
+    </div>
+  `, () => { openUserBag(id); return false; });
+  // 该弹窗无保存语义：重写底部按钮行为
+  $('dlgOk').onclick = () => { closeDlg(); loadUsers(); };
+}
+async function adminDelBagItem(drawId) {
+  if (!confirm('从该用户背包删除此物品？')) return;
+  try {
+    await api(`/api/admin/users/${bagUserId}/backpack?drawId=${drawId}`, { method: 'DELETE' });
+    openUserBag(bagUserId);
+  } catch (e) { alert(e.message); }
+}
+async function adminAddBagItem() {
+  const prizeId = Number($('bagAddPrize').value);
+  try {
+    await api('/api/admin/draws', { method: 'POST', body: { userId: bagUserId, prizeId, note: '管理员置入' } });
+    openUserBag(bagUserId);
+  } catch (e) { alert(e.message); }
+}
+async function adminChangeBagPrize(drawId) {
+  await ensurePrizesLoaded();
+  openDialog('修改物品 #' + drawId + ' 为哪件奖品', `
+    <div class="field"><select id="bp">${prizeOptions(drawId)}</select></div>
+  `, async () => {
+    await api(`/api/admin/draws/${drawId}`, { method: 'PATCH', body: { prizeId: Number($('bp').value) } });
+    openUserBag(bagUserId); return false;
+  });
+}
+function adminAddNote(drawId) {
+  openDialog('修改记录 #' + drawId + ' 的备注', `
+    <div class="field"><input type="text" id="bn" placeholder="备注"></div>
+  `, async () => {
+    await api(`/api/admin/draws/${drawId}`, { method: 'PATCH', body: { note: $('bn').value } });
+    openUserBag(bagUserId); return false;
+  });
+}
+
+/* ============ 呈文审批 ============ */
+async function loadRequests() {
+  const d = await api('/api/admin/requests');
+  $('reqBody').innerHTML = d.requests.map(r => `
+    <tr>
+      <td>${r.id}</td>
+      <td><b>${esc(r.username)}</b></td>
+      <td style="max-width:260px">${esc(r.text)}</td>
+      <td>${r.quotaAsk}</td>
+      <td>${r.items.length ? r.items.map(esc).join('、') : '—'}</td>
+      <td>${r.status === 'pending' ? '<span class="tag again">候批</span>' : r.status === 'approved' ? '<span class="tag replace">已批准</span>' : '<span class="tag off">已驳回</span>'}</td>
+      <td>
+        ${r.status === 'pending' ? `
+          <button class="btn small" onclick="approveRequest(${r.id}, ${r.quotaAsk})">批准</button>
+          <button class="btn small danger" onclick="rejectRequest(${r.id})">驳回</button>` : `<span class="hint">${esc(r.adminNote || '')}</span>`}
+      </td>
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:#96835f;padding:30px">暂无呈文</td></tr>';
+}
+function approveRequest(id, quotaAsk) {
+  openDialog('批准呈文 #' + id, `
+    <div class="field"><div class="flabel">批准加抽签次数（可调整）</div><input type="number" id="rq" value="${quotaAsk}" min="0"></div>
+    <div class="field"><div class="flabel">批复语（可空）</div><input type="text" id="rn" placeholder="例如：准"></div>
+    <div class="hint">批准后：附带物品将被消耗；驳回则原样退回。</div>
+  `, async () => {
+    await api(`/api/admin/requests/${id}/approve`, { method: 'POST', body: {
+      quota: Number($('rq').value) || 0, note: $('rn').value,
+    }});
+    loadRequests(); return true;
+  });
+}
+async function rejectRequest(id) {
+  if (!confirm('驳回呈文 #' + id + '？附带物品将退回用户背包。')) return;
+  try { await api(`/api/admin/requests/${id}/reject`, { method: 'POST', body: {} }); loadRequests(); }
+  catch (e) { alert(e.message); }
+}
+function setQuota(id) {
+  const u = users.find(x => x.id === id);
+  openDialog('为「' + esc(u.username) + '」设置抽签次数', `
+    <div class="field"><div class="flabel">剩余抽签次数（当前 ${u.quota}）</div><input type="number" id="sq" value="${u.quota}" min="0"></div>
+  `, async () => {
+    await api(`/api/admin/users/${id}`, { method: 'PATCH', body: { quota: Number($('sq').value) || 0 } });
+    loadUsers(); return true;
+  });
+}
+async function drawFor(id) {
+  const u = users.find(x => x.id === id);
+  if (!confirm(`确定代替「${u.username}」抽签一次？（消耗其 1 次抽签次数）`)) return;
+  try {
+    const d = await api('/api/admin/draw', { method: 'POST', body: { userId: id } });
+    alert(`天命所归：「${d.prize.name}」已记入 ${u.username} 的背包`);
+    loadUsers();
+  } catch (e) { alert(e.message); }
+}
+async function loginAs(id) {
+  const u = users.find(x => x.id === id);
+  if (!confirm(`以「${u.username}」的身份打开用户端？（将以该用户身份登录，可代其抽签、查看其背包）`)) return;
+  try {
+    const d = await api(`/api/admin/users/${id}/impersonate`, { method: 'POST' });
+    window.open('./#token=' + encodeURIComponent(d.token), '_blank');
+  } catch (e) { alert(e.message); }
+}
+function resetUserPass(id) {
+  openDialog('重置用户口令', `<div class="field"><div class="flabel">新口令</div><input type="text" id="np" placeholder="新口令"></div>`, async () => {
+    const p = $('np').value;
+    if (!p) { showDlgErr('口令不能为空'); return false; }
+    await api(`/api/admin/users/${id}`, { method: 'PATCH', body: { password: p } });
+    return true;
+  });
+}
+async function delUser(id) {
+  if (!confirm('删除该用户将同时清空其背包记录，确定？')) return;
+  try { await api(`/api/admin/users/${id}`, { method: 'DELETE' }); loadUsers(); } catch (e) { alert(e.message); }
+}
+
+/* ============ 抽奖记录 ============ */
+async function loadDraws() {
+  const d = await api('/api/admin/draws');
+  draws = d.draws;
+  renderDraws();
+}
+function renderDraws() {
+  const kw = $('drawSearch').value.trim();
+  const list = draws.filter(x => !kw || (x.username || '').includes(kw) || (x.prize && x.prize.name.includes(kw)));
+  $('drawSummary').textContent = `共 ${draws.length} 条记录`;
+  const PAGE = 20;
+  const pages = Math.max(1, Math.ceil(list.length / PAGE));
+  if (drawPage >= pages) drawPage = pages - 1;
+  const slice = list.slice(drawPage * PAGE, (drawPage + 1) * PAGE);
+  $('drawBody').innerHTML = slice.map(d => `
+    <tr>
+      <td>${d.id}</td>
+      <td><b>${esc(d.username)}</b></td>
+      <td>${d.prize ? esc(d.prize.name) : '<span style="color:#b03a35">未知奖品(已删)</span>'}</td>
+      <td>${d.prize ? `<span class="tag cat">${esc(d.prize.category)}</span>` : '-'}</td>
+      <td>${fmtTime(d.time)}</td>
+      <td>${d.source === 'self' ? '本人抽签' : d.source === 'admin' ? '管理员代抽' : d.source === 'shop' ? '集市购买' : '手动补录'}</td>
+      <td>${esc(d.note || '')}</td>
+      <td>
+        <button class="btn small gold" onclick="editDraw(${d.id})">改奖品</button>
+        <button class="btn small plain" onclick="editDrawNote(${d.id})">改备注</button>
+        <button class="btn small gold" onclick="moveDraw(${d.id})">转用户</button>
+        <button class="btn small danger" onclick="delDraw(${d.id})">删除</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;color:#96835f;padding:30px">暂无记录</td></tr>';
+  $('drawPager').innerHTML = `
+    <button ${drawPage===0?'disabled':''} onclick="drawPage--;renderDraws()">上一页</button>
+    <span class="hint">第 ${drawPage+1} / ${pages} 页</span>
+    <button ${drawPage>=pages-1?'disabled':''} onclick="drawPage++;renderDraws()">下一页</button>`;
+}
+function prizeOptions(sel) {
+  return prizes.map(p => `<option value="${p.id}" ${p.id===sel?'selected':''}>#${p.id} ${esc(p.name)}（${p.replace?'放回':'不放回,'+p.stock+'件'}）</option>`).join('');
+}
+async function ensurePrizesLoaded() { if (!prizes.length) await loadPrizes(); }
+async function editDraw(id) {
+  await ensurePrizesLoaded();
+  const d = draws.find(x => x.id === id);
+  openDialog('修改记录 #' + id + ' 的奖品', `
+    <div class="field"><div class="flabel">当前用户：${esc(d.username)} ｜ 原奖品：${d.prize ? esc(d.prize.name) : '未知'}</div></div>
+    <div class="field"><div class="flabel">新奖品（不放回奖品将同步调整库存）</div><select id="dp">${prizeOptions(d.prizeId)}</select></div>
+  `, async () => {
+    await api(`/api/admin/draws/${id}`, { method: 'PATCH', body: { prizeId: Number($('dp').value) } });
+    loadDraws(); return true;
+  });
+}
+function editDrawNote(id) {
+  const d = draws.find(x => x.id === id);
+  openDialog('修改记录 #' + id + ' 的备注', `
+    <div class="field"><div class="flabel">备注（例如奖品交接情况）</div><input type="text" id="dn" value="${esc(d.note||'')}"></div>
+  `, async () => {
+    await api(`/api/admin/draws/${id}`, { method: 'PATCH', body: { note: $('dn').value } });
+    loadDraws(); return true;
+  });
+}
+function moveDraw(id) {
+  const d = draws.find(x => x.id === id);
+  openDialog('将记录 #' + id + ' 转移给其他用户', `
+    <div class="field"><div class="flabel">当前用户：${esc(d.username)}</div></div>
+    <div class="field"><div class="flabel">目标用户</div><select id="dm">${users.map(u => `<option value="${u.id}">#${u.id} ${esc(u.username)}</option>`).join('')}</select></div>
+  `, async () => {
+    await api(`/api/admin/draws/${id}`, { method: 'PATCH', body: { userId: Number($('dm').value) } });
+    loadDraws(); return true;
+  });
+}
+async function delDraw(id) {
+  if (!confirm('删除该记录？不放回奖品的库存将自动返还一件。')) return;
+  try { await api(`/api/admin/draws/${id}`, { method: 'DELETE' }); loadDraws(); } catch (e) { alert(e.message); }
+}
+async function openAddDraw() {
+  await Promise.all([ensurePrizesLoaded(), users.length ? Promise.resolve() : loadUsers()]);
+  openDialog('补录一条获得记录', `
+    <div class="field"><div class="flabel">用户</div><select id="adUser">${users.map(u => `<option value="${u.id}">#${u.id} ${esc(u.username)}</option>`).join('')}</select></div>
+    <div class="field"><div class="flabel">奖品（不放回奖品将消耗一件库存）</div><select id="adPrize">${prizeOptions()}</select></div>
+    <div class="field"><div class="flabel">备注（可空）</div><input type="text" id="adNote"></div>
+    <div class="hint">补录不消耗用户的抽签次数，用于线下发放或人工补发。</div>
+  `, async () => {
+    await api('/api/admin/draws', { method: 'POST', body: {
+      userId: Number($('adUser').value), prizeId: Number($('adPrize').value), note: $('adNote').value,
+    }});
+    loadDraws(); return true;
+  });
+}
+
+/* ============ 内容管理 ============ */
+async function loadPosts() {
+  const d = await api('/api/admin/posts');
+  posts = d.posts;
+  renderContentTabs();
+  renderPosts();
+}
+function renderContentTabs() {
+  $('contentTabs').innerHTML = MODULES.map(m =>
+    `<button class="${m.key===currentContentModule?'active':''}" onclick="currentContentModule='${m.key}';renderContentTabs();renderPosts()">${m.name}</button>`).join('');
+}
+function renderPosts() {
+  const list = posts.filter(p => p.module === currentContentModule);
+  $('postBody').innerHTML = list.map(p => `
+    <tr>
+      <td>${p.id}</td>
+      <td><b>${esc(p.title)}</b></td>
+      <td>${(p.content||'').length} 字</td>
+      <td>${fmtTime(p.createdAt)}</td>
+      <td>${fmtTime(p.updatedAt)}</td>
+      <td>${p.pinned ? '是' : '否'}</td>
+      <td>
+        <button class="btn small" onclick="openPostEditor(${p.id})">编辑</button>
+        <button class="btn small plain" onclick="togglePin(${p.id},${p.pinned?0:1})">${p.pinned?'取消置顶':'置顶'}</button>
+        <button class="btn small danger" onclick="delPost(${p.id})">删除</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:#96835f;padding:30px">此模块暂无内容，点上方「发布新内容」</td></tr>';
+}
+function openPostEditor(id) {
+  const p = id ? posts.find(x => x.id === id) : null;
+  openDialog(p ? '编辑内容 #' + id : '发布新内容（' + MODULES.find(m=>m.key===currentContentModule).name + '）', `
+    <div class="field"><div class="flabel">标题（例如：10.23 江湖密报其一）</div><input type="text" id="pt" value="${p?esc(p.title):''}"></div>
+    <div class="field"><div class="flabel">正文（不限字数，支持换行排版）</div><textarea id="pc" style="min-height:240px">${p?esc(p.content):''}</textarea></div>
+    <div class="field"><label><input type="checkbox" id="pp" ${p&&p.pinned?'checked':''}> 置顶显示</label></div>
+  `, async () => {
+    const title = $('pt').value, content = $('pc').value;
+    if (!title.trim()) { showDlgErr('标题不能为空'); return false; }
+    const body = { title, content, pinned: $('pp').checked };
+    if (p) await api(`/api/admin/posts/${id}`, { method: 'PATCH', body });
+    else await api('/api/admin/posts', { method: 'POST', body: { ...body, module: currentContentModule } });
+    loadPosts(); return true;
+  });
+}
+async function togglePin(id, val) {
+  try { await api(`/api/admin/posts/${id}`, { method: 'PATCH', body: { pinned: !!val } }); loadPosts(); } catch (e) { alert(e.message); }
+}
+async function delPost(id) {
+  if (!confirm('确定删除该内容？')) return;
+  try { await api(`/api/admin/posts/${id}`, { method: 'DELETE' }); loadPosts(); } catch (e) { alert(e.message); }
+}
+
+/* ============ 剧情管理 ============ */
+let storyMod = 'qunying';
+function renderStoryTabs() {
+  document.querySelectorAll('#storyTabs button').forEach(b =>
+    b.classList.toggle('active', b.dataset.mod === storyMod));
+}
+async function loadStory() {
+  renderStoryTabs();
+  const d = await api('/api/story/' + storyMod);
+  $('storyAdminBody').innerHTML = d.chapters.map(c => `
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <b style="font-size:16px">#${c.order} ${esc(c.title)}</b>
+        <span class="hint">${c.sections.length} 节</span>
+        <span style="flex:1"></span>
+        <button class="btn small plain" onclick="renameChapter(${c.id},'${esc(c.title)}')">改名</button>
+        <button class="btn small gold" onclick="openSectionEditor(null,${c.id})">添加节</button>
+        <button class="btn small danger" onclick="delChapter(${c.id})">删章</button>
+      </div>
+      ${c.sections.map(s => `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 4px;border-top:1px dashed #e0d0a8;margin-top:6px">
+          <span class="hint">第${s.order}节</span>
+          <b>${esc(s.title)}</b>
+          <span class="hint">（${(s.content||'').length}字，更新于 ${fmtTime(s.updatedAt)}）</span>
+          <span style="flex:1"></span>
+          <button class="btn small" onclick="openSectionEditor(${s.id},${c.id})">编辑剧情</button>
+          <button class="btn small danger" onclick="delSection(${s.id})">删节</button>
+        </div>`).join('') || '<div class="hint" style="margin-top:8px">（本章暂无节，点「添加节」开写剧情）</div>'}
+    </div>`).join('') || '<div class="card"><div class="hint">尚无章节，先在上方建章。</div></div>';
+}
+async function addChapter() {
+  const title = $('stChTitle').value;
+  if (!title.trim()) { alert('章名不能为空'); return; }
+  const order = $('stChOrder').value;
+  try {
+    await api('/api/admin/chapters', { method: 'POST', body: { module: storyMod, title, order: order ? Number(order) : undefined } });
+    $('stChTitle').value = ''; $('stChOrder').value = '';
+    loadStory();
+  } catch (e) { alert(e.message); }
+}
+async function renameChapter(id, cur) {
+  openDialog('修改章名', `<div class="field"><input type="text" id="rcT" value="${cur}"></div>`, async () => {
+    await api(`/api/admin/chapters/${id}`, { method: 'PATCH', body: { title: $('rcT').value } });
+    loadStory(); return true;
+  });
+}
+async function delChapter(id) {
+  if (!confirm('删除该章将连同其所有节与剧情！确定？')) return;
+  try { await api(`/api/admin/chapters/${id}`, { method: 'DELETE' }); loadStory(); } catch (e) { alert(e.message); }
+}
+function openSectionEditor(id, chapterId) {
+  const isNew = id === null;
+  openDialog(isNew ? '添加节 · 撰写剧情' : '编辑节剧情', `
+    <div class="field"><div class="flabel">节名</div><input type="text" id="seT" placeholder="例如：初入江湖"></div>
+    <div class="field"><div class="flabel">剧情正文（不限字数）</div><textarea id="seC" style="min-height:260px"></textarea></div>
+  `, async () => {
+    const title = $('seT').value, content = $('seC').value;
+    if (!title.trim()) { showDlgErr('节名不能为空'); return false; }
+    if (isNew) {
+      await api('/api/admin/sections', { method: 'POST', body: { chapterId, title, content } });
+    } else {
+      await api(`/api/admin/sections/${id}`, { method: 'PATCH', body: { title, content } });
+    }
+    loadStory(); return true;
+  });
+  // 编辑时回填
+  if (!isNew) {
+    api('/api/story/' + storyMod).then(d => {
+      for (const c of d.chapters) {
+        const s = c.sections.find(x => x.id === id);
+        if (s) { $('seT').value = s.title; $('seC').value = s.content; return; }
+      }
+    });
+  }
+}
+async function delSection(id) {
+  if (!confirm('删除该节剧情？确定？')) return;
+  try { await api(`/api/admin/sections/${id}`, { method: 'DELETE' }); loadStory(); } catch (e) { alert(e.message); }
+}
+
+/* ============ 秘籍管理 ============ */
+let manuals = [];
+async function loadManuals() {
+  const d = await api('/api/admin/manuals');
+  manuals = d.manuals;
+  $('manualList').innerHTML = manuals.map(m => `
+    <div class="card">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <b style="font-size:16px">《${esc(m.name)}》</b>
+        <span class="hint">${m.prizes.length} 卷残卷 · 已被合成 ${m.synthCount} 次</span>
+        <span style="flex:1"></span>
+        <button class="btn small" onclick="editManual(${m.id})">编辑残卷构成</button>
+        <button class="btn small danger" onclick="delManual(${m.id})">删除秘籍</button>
+      </div>
+      <div style="margin-top:8px">
+        ${m.prizes.map(p => `<span class="tag ${p.enabled ? 'cat' : 'off'}">${esc(p.name)}${p.enabled ? '' : '（已绝版）'}</span>`).join(' ') || '<span class="hint">尚未配置残卷</span>'}
+      </div>
+    </div>`).join('') || '<div class="card"><div class="hint">尚无秘籍，先在上方立籍。</div></div>';
+  $('synthBody').innerHTML = d.synths.map(s => `
+    <tr>
+      <td>${s.id}</td>
+      <td><b>《${esc(s.manualName)}》</b></td>
+      <td>${esc(s.username)}</td>
+      <td>${s.drawIds.length} 卷</td>
+      <td>${fmtTime(s.createdAt)}</td>
+    </tr>`).join('') || '<tr><td colspan="5" style="text-align:center;color:#96835f;padding:20px">暂无合成记录</td></tr>';
+}
+async function addManual() {
+  const name = $('mnName').value;
+  if (!name.trim()) { alert('秘籍名称不能为空'); return; }
+  try {
+    const r = await api('/api/admin/manuals', { method: 'POST', body: { name, prizeIds: [] } });
+    $('mnName').value = '';
+    await loadManuals();
+    // 立籍后立即引导编辑残卷构成
+    editManual(r.data.manual.id);
+  } catch (e) { alert(e.message); }
+}
+async function editManual(id) {
+  const m = manuals.find(x => x.id === id);
+  if (!m) return;
+  const prizesD = await api('/api/admin/prizes');
+  const all = prizesD.prizes;
+  openDialog('编辑《' + esc(m.name) + '》残卷构成', `
+    <div class="field"><div class="flabel">秘籍名称</div><input type="text" id="emName" value="${esc(m.name)}"></div>
+    <div class="field"><div class="flabel">勾选作为残卷的奖池奖品（合成需集齐全部）</div>
+      <div style="max-height:260px;overflow-y:auto;border:1px dashed #cbb98a;border-radius:6px;padding:8px 12px">
+        ${all.map(p => `
+          <label style="display:block;margin:4px 0;font-size:14px">
+            <input type="checkbox" class="emPrize" value="${p.id}" ${m.prizes.includes(p.id) ? 'checked' : ''}>
+            #${p.id} ${esc(p.name)}（${p.enabled ? '在池' : '已停用'}）
+          </label>`).join('')}
+      </div>
+    </div>
+    <div class="hint">勾选作为残卷的奖池奖品——用户需集齐全部勾选的残卷才能合成；有用户合成后，这些残卷会自动从奖池停用（绝版）。可暂不勾选，先立空籍稍后再挂。</div>
+  `, async () => {
+    const prizeIds = [...document.querySelectorAll('.emPrize:checked')].map(c => Number(c.value));
+    await api(`/api/admin/manuals/${id}`, { method: 'PATCH', body: { name: $('emName').value, prizeIds } });
+    loadManuals(); return true;
+  });
+}
+async function delManual(id) {
+  if (!confirm('删除该秘籍？（仅解除残卷关联，不影响奖池奖品本身）')) return;
+  try { await api(`/api/admin/manuals/${id}`, { method: 'DELETE' }); loadManuals(); } catch (e) { alert(e.message); }
+}
+
+/* ============ 门派管理 ============ */
+let adminSects = [];
+async function loadSectsAdmin() {
+  const d = await api('/api/sects');
+  adminSects = d.sects;
+  const usersD = await api('/api/admin/users');
+  const users = usersD.users.filter(u => u.status === 'approved');
+  $('sectBody').innerHTML = adminSects.map(s => `
+    <tr>
+      <td>${s.id}</td>
+      <td><b>${esc(s.name)}</b></td>
+      <td><span class="tag cat">${esc(s.leaderTitle)}</span></td>
+      <td>${esc(s.leaderName)}</td>
+      <td>${s.viceLeaderName ? esc(s.viceLeaderName) + '（' + esc(s.viceTitle) + '）' : '—'}</td>
+      <td>${s.memberCount}</td>
+      <td><span class="tag silver">${s.totalContribution}</span></td>
+      <td>
+        ${s.noLeader ? '<span class="hint">（不设首领）</span>' : `<button class="btn small gold" onclick="setSectLeader(${s.id},'leader')">任命${esc(s.leaderTitle)}</button>`}
+        ${s.canHaveVice ? `<button class="btn small gold" onclick="setSectLeader(${s.id},'vice')">任命${esc(s.viceTitle)}</button>` : ''}
+        <button class="btn small" onclick="editSectTitle(${s.id})">改称号</button>
+        <button class="btn small plain" onclick="viewSectMembers(${s.id})">弟子名录</button>
+        <button class="btn small danger" onclick="delSect(${s.id},'${esc(s.name)}')">除名</button>
+      </td>
+    </tr>`).join('');
+  // 缓存用户列表供任命
+  loadSectsAdmin.users = users;
+}
+async function addSect() {
+  const name = $('scName').value;
+  if (!name.trim()) { alert('门派名称不能为空'); return; }
+  try { await api('/api/admin/sects', { method: 'POST', body: { name } }); $('scName').value = ''; loadSectsAdmin(); }
+  catch (e) { alert(e.message); }
+}
+function setSectLeader(sectId, role) {
+  const s = adminSects.find(x => x.id === sectId);
+  const users = loadSectsAdmin.users || [];
+  const titleName = role === 'vice' ? s.viceTitle : s.leaderTitle;
+  const curId = role === 'vice' ? s.viceLeaderId : s.leaderId;
+  openDialog(`任命「${esc(s.name)}」${titleName}`, `
+    <div class="field"><div class="flabel">选择侠士（任命后其归属本派；一人可兼任多派首领）</div>
+      <select id="slU">
+        <option value="">（空缺）</option>
+        ${users.map(u => `<option value="${u.id}" ${u.id===curId?'selected':''}>${esc(u.username)}${u.sectName ? '（' + esc(u.sectName) + '）' : ''}</option>`).join('')}
+      </select>
+    </div>
+  `, async () => {
+    const body = {};
+    body[role === 'vice' ? 'viceLeaderUserId' : 'leaderUserId'] = $('slU').value ? Number($('slU').value) : null;
+    await api(`/api/admin/sects/${sectId}`, { method: 'PATCH', body });
+    loadSectsAdmin(); return true;
+  });
+}
+function editSectTitle(sectId) {
+  const s = adminSects.find(x => x.id === sectId);
+  openDialog('修改「' + esc(s.name) + '」首领称号', `
+    <div class="field"><div class="flabel">首领称号（如：掌门 / 盟主 / 庄主 / 帮主 / 堂主…；副首领自动冠「副」）</div>
+      <input type="text" id="stTitle" value="${esc(s.leaderTitle)}"></div>
+  `, async () => {
+    if (!$('stTitle').value.trim()) { showDlgErr('称号不能为空'); return false; }
+    await api(`/api/admin/sects/${sectId}`, { method: 'PATCH', body: { leaderTitle: $('stTitle').value } });
+    loadSectsAdmin(); return true;
+  });
+}
+function viewSectMembers(sectId) {
+  const s = adminSects.find(x => x.id === sectId);
+  const rows = s.members.map(m => `
+    <div class="gift-row">
+      <span>${m.isMaster ? '⭐ ' + esc(s.leaderTitle) + ' · ' : (m.isVice ? '☆ ' + esc(s.viceTitle) + ' · ' : '')}<b>${esc(m.username)}</b></span>
+      <span class="hint">贡献值 ${m.contribution}</span>
+    </div>`).join('');
+  openDialog('「' + esc(s.name) + '」弟子名录（' + s.members.length + '人）', rows || '<div class="hint">门下暂无弟子</div>', () => true);
+  $('dlgOk').style.display = 'none';
+}
+async function delSect(id, name) {
+  if (!confirm(`除去门派「${name}」？其弟子将尽数转为散侠（师徒关系一并解除）。`)) return;
+  try { await api(`/api/admin/sects/${id}`, { method: 'DELETE' }); loadSectsAdmin(); } catch (e) { alert(e.message); }
+}
+
+/* ============ 文苑治理 ============ */
+async function loadWenyuan() {
+  const w = await (await fetch('/api/works')).json();
+  const n = await (await fetch('/api/notices')).json();
+  $('wWorks').innerHTML = w.works.map(x => `
+    <tr>
+      <td>${x.id}</td>
+      <td><b>${esc(x.title)}</b>${x.pinned ? ' <span class="tag again">置顶</span>' : ''}${x.polish ? ' <span class="tag silver">✦擦亮</span>' : ''}</td>
+      <td>${esc(x.author)}</td>
+      <td>${(x.content||'').length} 字${x.image ? ' · 有图' : ''}</td>
+      <td>${x.favCount} 收藏</td>
+      <td>
+        <button class="btn small plain" onclick="toggleWY('works',${x.id},'pinned',${x.pinned?0:1})">${x.pinned?'取消置顶':'置顶'}</button>
+        <button class="btn small gold" onclick="toggleWY('works',${x.id},'polish',${x.polish?0:1})">${x.polish?'取消擦亮':'擦亮'}</button>
+        <button class="btn small" onclick="editWY('works',${x.id})">修改</button>
+        <button class="btn small danger" onclick="delWY('works',${x.id})">删除</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:#96835f;padding:20px">暂无作品</td></tr>';
+  $('wNotices').innerHTML = n.notices.map(x => `
+    <tr>
+      <td>${x.id}</td>
+      <td><b>${esc(x.title)}</b>${x.pinned ? ' <span class="tag again">置顶</span>' : ''}${x.polish ? ' <span class="tag silver">✦擦亮</span>' : ''}</td>
+      <td>${esc(x.author)}</td>
+      <td>${x.bounty > 0 ? `<span class="tag silver">${x.bounty}文</span>` : '—'}</td>
+      <td>${x.takenBy ? esc(x.takenByName) : '未摘取'}</td>
+      <td>${x.comments.length} 点评 · ${x.favCount} 收藏</td>
+      <td>
+        <button class="btn small plain" onclick="toggleWY('notices',${x.id},'pinned',${x.pinned?0:1})">${x.pinned?'取消置顶':'置顶'}</button>
+        <button class="btn small gold" onclick="toggleWY('notices',${x.id},'polish',${x.polish?0:1})">${x.polish?'取消擦亮':'擦亮'}</button>
+        <button class="btn small" onclick="editWY('notices',${x.id})">修改</button>
+        <button class="btn small danger" onclick="delWY('notices',${x.id})">删除</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:#96835f;padding:20px">暂无告示</td></tr>';
+}
+async function toggleWY(kind, id, field, val) {
+  try {
+    const body = {}; body[field] = !!val;
+    await api(`/api/admin/${kind}/${id}`, { method: 'PATCH', body });
+    loadWenyuan();
+  } catch (e) { alert(e.message); }
+}
+async function editWY(kind, id) {
+  const list = kind === 'works' ? (await (await fetch('/api/works')).json()).works : (await (await fetch('/api/notices')).json()).notices;
+  const x = list.find(v => v.id === id);
+  if (!x) return;
+  openDialog('修改' + (kind === 'works' ? '作品' : '告示') + ' #' + id, `
+    <div class="field"><div class="flabel">标题</div><input type="text" id="wyT" value="${esc(x.title)}"></div>
+    <div class="field"><div class="flabel">正文</div><textarea id="wyC" style="min-height:180px">${esc(x.content)}</textarea></div>
+  `, async () => {
+    if (!$('wyT').value.trim()) { showDlgErr('标题不能为空'); return false; }
+    await api(`/api/admin/${kind}/${id}`, { method: 'PATCH', body: { title: $('wyT').value, content: $('wyC').value } });
+    loadWenyuan(); return true;
+  });
+}
+async function delWY(kind, id) {
+  if (!confirm('删除该' + (kind === 'works' ? '作品' : '告示') + '？（未发放的悬赏将退回张贴人）')) return;
+  try { await api(`/api/admin/${kind}/${id}`, { method: 'DELETE' }); loadWenyuan(); } catch (e) { alert(e.message); }
+}
+
+/* ============ 市集管理 ============ */
+async function loadShop() {
+  const d = await api('/api/admin/shop');
+  $('setStipendMin').value = d.settings.stipendMin != null ? d.settings.stipendMin : 70;
+  $('setStipendMax').value = d.settings.stipendMax != null ? d.settings.stipendMax : 150;
+  $('setRate').value = d.settings.sellRate;
+  $('setDrawEnabled').checked = d.settings.drawEnabled !== false;
+  // 奖品下拉（供上架）
+  const prizesD = await api('/api/admin/prizes');
+  prizes = prizesD.prizes;
+  $('shopPrize').innerHTML = prizes.map(p => `<option value="${p.id}">#${p.id} ${esc(p.name)}（${p.replace ? '放回' : '不放回'}）</option>`).join('');
+  $('shopBody').innerHTML = d.items.map(s => `
+    <tr>
+      <td><input type="checkbox" class="shopChk" value="${s.id}"></td>
+      <td>${s.id}</td>
+      <td><b>${esc(s.name)}</b></td>
+      <td><span class="tag cat">${esc(s.category)}</span></td>
+      <td><span class="tag silver">${s.price} ${s.currency === 'silver' ? '纹银' : s.currency === 'contribution' ? '贡献' : '文'}</span></td>
+      <td>${s.stock === -1 ? '∞' : s.stock}</td>
+      <td>${s.enabled ? '<span class="tag replace">在售</span>' : '<span class="tag off">下架</span>'}</td>
+      <td>
+        <button class="btn small plain" onclick="toggleShop(${s.id},${s.enabled ? 0 : 1})">${s.enabled ? '下架' : '上架'}</button>
+        <button class="btn small" onclick="editShopPrice(${s.id})">改价/货币</button>
+        <button class="btn small danger" onclick="delShop(${s.id})">删除</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="8" style="text-align:center;color:#96835f;padding:30px">官府集市暂无商品</td></tr>';
+  // 交易流水
+  const t = await api('/api/admin/trades');
+  // 在售挂单治理
+  const active = t.trades.filter(x => x.status === 'active');
+  $('activeTradesBody').innerHTML = active.map(x => `
+    <tr>
+      <td>${x.id}</td>
+      <td><b>${esc(x.item)}</b></td>
+      <td>${esc(x.sellerName)}</td>
+      <td><span class="tag silver">${x.price} 文</span></td>
+      <td>${fmtTime(x.createdAt)}</td>
+      <td>
+        <button class="btn small" onclick="editTradePrice(${x.id}, ${x.price})">改金额</button>
+        <button class="btn small danger" onclick="delistTrade(${x.id})">下架退回</button>
+      </td>
+    </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:#96835f;padding:20px">暂无在售挂单</td></tr>';
+  $('tradeBody').innerHTML = t.trades.slice(0, 30).map(x => `
+    <tr>
+      <td>${x.id}</td><td><b>${esc(x.item)}</b></td>
+      <td>${esc(x.sellerName)}</td><td>${esc(x.buyerName) || '-'}</td>
+      <td><span class="tag silver">${x.price}</span></td>
+      <td>${x.status === 'active' ? '在售' : x.status === 'sold' ? '已成交' : '已撤单'}</td>
+      <td>${fmtTime(x.createdAt)}</td>
+    </tr>`).join('') || '<tr><td colspan="7" style="text-align:center;color:#96835f;padding:20px">暂无互市流水</td></tr>';
+  $('giftBody').innerHTML = t.gifts.slice(0, 30).map(g => `
+    <tr>
+      <td>${g.id}</td><td><b>${esc(g.item)}</b></td>
+      <td>#${g.fromUserId}</td><td>#${g.toUserId}</td>
+      <td>${g.status === 'pending' ? '待接收' : g.status === 'accepted' ? '已收下' : '已婉拒'}</td>
+      <td>${fmtTime(g.createdAt)}</td>
+    </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:#96835f;padding:20px">暂无赠礼流水</td></tr>';
+}
+async function saveSettings() {
+  try {
+    await api('/api/admin/settings', { method: 'PATCH', body: {
+      stipendMin: Number($('setStipendMin').value) || 0,
+      stipendMax: Number($('setStipendMax').value) || 0,
+      sellRate: Number($('setRate').value) || 0.7,
+      drawEnabled: $('setDrawEnabled').checked,
+    }});
+    alert('参数已保存');
+  } catch (e) { alert(e.message); }
+}
+async function addShopItem() {
+  const body = {
+    prizeId: Number($('shopPrize').value),
+    price: Number($('shopPrice').value) || 0,
+    currency: $('shopCurrency').value,
+    stock: $('shopStock').value === '' ? -1 : Number($('shopStock').value),
+  };
+  try { await api('/api/admin/shop', { method: 'POST', body }); loadShop(); }
+  catch (e) { alert(e.message); }
+}
+async function toggleShop(id, val) {
+  try { await api(`/api/admin/shop/${id}`, { method: 'PATCH', body: { enabled: !!val } }); loadShop(); } catch (e) { alert(e.message); }
+}
+function editShopPrice(id) {
+  openDialog('修改商品 #' + id + ' 售价与货币', `
+    <div class="field"><div class="flabel">售价（数值）</div><input type="number" id="sp" min="0"></div>
+    <div class="field"><div class="flabel">支付货币</div>
+      <select id="spCur">
+        <option value="copper">铜板（文）</option>
+        <option value="silver">纹银（两）</option>
+        <option value="contribution">贡献值</option>
+      </select>
+    </div>
+  `, async () => {
+    const v = Number($('sp').value);
+    if (!Number.isInteger(v) || v < 0) { showDlgErr('售价须为非负整数'); return false; }
+    await api(`/api/admin/shop/${id}`, { method: 'PATCH', body: { price: v, currency: $('spCur').value } });
+    loadShop(); return true;
+  });
+}
+async function delShop(id) {
+  if (!confirm('确定删除该商品？')) return;
+  try { await api(`/api/admin/shop/${id}`, { method: 'DELETE' }); loadShop(); } catch (e) { alert(e.message); }
+}
+async function batchShop(action) {
+  const ids = [...document.querySelectorAll('.shopChk:checked')].map(c => Number(c.value));
+  if (!ids.length) { alert('请先勾选要操作的商品'); return; }
+  const label = action === 'on' ? '上架' : action === 'off' ? '下架' : '删除';
+  if (!confirm(`确认批量${label} ${ids.length} 件商品？`)) return;
+  let done = 0, fail = 0;
+  for (const id of ids) {
+    try {
+      if (action === 'on') await api(`/api/admin/shop/${id}`, { method: 'PATCH', body: { enabled: true } });
+      else if (action === 'off') await api(`/api/admin/shop/${id}`, { method: 'PATCH', body: { enabled: false } });
+      else await api(`/api/admin/shop/${id}`, { method: 'DELETE' });
+      done++;
+    } catch (e) { fail++; }
+  }
+  alert(`批量${label}完成：成功 ${done}，失败 ${fail}`);
+  loadShop();
+}
+
+function editTradePrice(id, cur) {
+  openDialog('修改挂单 #' + id + ' 金额', `<div class="field"><div class="flabel">新售价（铜板·文；当前 ${cur} 文）</div><input type="number" id="tp" min="1" value="${cur}"></div>`, async () => {
+    const v = Number($('tp').value);
+    if (!Number.isInteger(v) || v <= 0) { showDlgErr('金额须为正整数'); return false; }
+    await api(`/api/admin/trades/${id}`, { method: 'PATCH', body: { price: v } });
+    loadShop(); return true;
+  });
+}
+async function delistTrade(id) {
+  if (!confirm('下架挂单 #' + id + '？物品将退回卖家背包。')) return;
+  try { await api(`/api/admin/trades/${id}`, { method: 'PATCH', body: { delist: true } }); loadShop(); }
+  catch (e) { alert(e.message); }
+}
+
+/* ============ 管理员 ============ */
+async function loadAdmins() {
+  const d = await api('/api/admin/admins');
+  $('adminBody').innerHTML = d.admins.map(a => `
+    <tr>
+      <td>${a.id}</td>
+      <td><b>${esc(a.username)}</b></td>
+      <td>${fmtTime(a.createdAt)}</td>
+      <td>
+        <button class="btn small plain" onclick="resetAdminPass(${a.id})">改口令</button>
+        <button class="btn small danger" onclick="delAdmin(${a.id})">删除</button>
+      </td>
+    </tr>`).join('');
+}
+async function addAdmin() {
+  const username = $('naName').value, password = $('naPass').value;
+  if (!username.trim() || !password) { alert('账号与口令不能为空'); return; }
+  try { await api('/api/admin/admins', { method: 'POST', body: { username, password } }); $('naName').value=''; $('naPass').value=''; loadAdmins(); }
+  catch (e) { alert(e.message); }
+}
+function resetAdminPass(id) {
+  openDialog('重置管理员口令', `<div class="field"><div class="flabel">新口令</div><input type="text" id="rap"></div>`, async () => {
+    const p = $('rap').value;
+    if (!p) { showDlgErr('口令不能为空'); return false; }
+    await api(`/api/admin/admins/${id}/password`, { method: 'POST', body: { password: p } });
+    return true;
+  });
+}
+async function delAdmin(id) {
+  if (!confirm('确定删除该管理员？')) return;
+  try { await api(`/api/admin/admins/${id}`, { method: 'DELETE' }); loadAdmins(); } catch (e) { alert(e.message); }
+}
+
+/* ============ 弹窗通用 ============ */
+function openDialog(title, bodyHTML, onSave) {
+  $('dlgTitle').textContent = title;
+  $('dlgBody').innerHTML = bodyHTML;
+  $('dlgErr').textContent = '';
+  $('dlgMask').classList.add('show');
+  dlgHandler = onSave;
+}
+function closeDlg() { $('dlgMask').classList.remove('show'); dlgHandler = null; }
+function showDlgErr(msg) { $('dlgErr').textContent = msg; }
+async function dlgOkClick() {
+  if (!dlgHandler) return closeDlg();
+  try {
+    const ok = await dlgHandler();
+    if (ok !== false) closeDlg();
+  } catch (e) { showDlgErr(e.message); }
+}
+$('dlgMask').addEventListener('click', e => { if (e.target === $('dlgMask')) closeDlg(); });
+
+boot();
+</script>
+</body>
+</html>
